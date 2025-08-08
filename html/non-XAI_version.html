@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This meta tag tells search engines not to index this page -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>Chat Interface</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Peter Guan" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles --- */
+
+        /* Basic page reset and font settings */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Chat window container */
+        #chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 100vh; /* Fills the full viewport height */
+            background-color: #ffffff;
+            /* Removed box-shadow and border-radius for a borderless look */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Chat log area */
+        #chat-log {
+            flex-grow: 1; /* Takes up all available space */
+            padding: 24px;
+            overflow-y: auto; /* Shows scrollbar when content overflows */
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* Spacing between messages */
+        }
+
+        /* Common style for a single message */
+        .message {
+            display: flex;
+            align-items: flex-start; /* Align avatar and bubble to the top */
+            gap: 12px;
+            max-width: 75%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .message .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0; /* Prevents the avatar from shrinking */
+        }
+
+        .message .content {
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.6;
+            word-wrap: break-word; /* Ensures long words can wrap */
+        }
+
+        /* Styles for AI messages (left side) */
+        .ai-message {
+            align-self: flex-start;
+        }
+        .ai-message .avatar {
+            background-color: #6a5acd; /* AI avatar color */
+        }
+        .ai-message .content {
+            background-color: #f1f0f0;
+            color: #333;
+            border-top-left-radius: 4px;
+        }
+
+        /* Styles for user messages (right side) */
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse; /* Avatar on the right */
+        }
+        .user-message .avatar {
+            background-color: #007bff; /* User avatar color */
+        }
+        .user-message .content {
+            background-color: #007bff;
+            color: #ffffff;
+            border-top-right-radius: 4px;
+        }
+
+        /* Input area form */
+        #chat-form {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #ffffff;
+        }
+
+        /* Text input box */
+        #user-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 24px;
+            resize: none; /* Disables manual resizing by the user */
+            font-size: 16px;
+            margin-right: 12px;
+            font-family: inherit;
+        }
+        #user-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        /* Send button */
+        #chat-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #chat-form button:hover {
+            background-color: #0056b3;
+        }
+
+        #chat-form button:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
+        }
+
+        /* Message fade-in animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- --- HTML Structure --- -->
+<div id="chat-container">
+    <!-- Chat log will be displayed here -->
+    <div id="chat-log">
+        <!-- Initial welcome message -->
+        <div class="message ai-message">
+            <div class="avatar">AI</div>
+            <div class="content">
+                <p>Hello! How can I help you today? Ask me anything below.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User input form -->
+    <form id="chat-form">
+        <textarea id="user-input" placeholder="Type a message..." rows="1" required></textarea>
+        <button type="submit" title="Send">
+            <!-- SVG for send icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        </button>
+    </form>
+</div>
+
+<script>
+    // --- JavaScript Logic ---
+
+    // Get elements from the page
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatLog = document.getElementById('chat-log');
+    const sendButton = chatForm.querySelector('button');
+
+    // Listen for the form submission event
+    chatForm.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevents the form's default submission behavior (reloading the page)
+
+        const userText = userInput.value.trim(); // Get the user's input text and remove leading/trailing spaces
+
+        if (userText === '') {
+            return; // If the user didn't enter anything, do nothing
+        }
+
+        // 1. Add the user's message to the chat log
+        appendMessage(userText, 'user');
+
+        // 2. Clear the input field
+        userInput.value = '';
+        userInput.style.height = 'auto'; // Reset height
+        toggleSendButton(); // Disable the send button
+
+        // 3. Simulate an AI response
+        // Use setTimeout to create a brief delay, making the interaction feel more natural
+        setTimeout(() => {
+            const aiResponse = "This is an example response from AI model.";
+            appendMessage(aiResponse, 'ai');
+        }, 500); // Respond after 500 milliseconds (0.5 seconds)
+    });
+
+    // Listen for input events on the textarea to enable/disable the send button
+    userInput.addEventListener('input', toggleSendButton);
+
+    // Listen for keyboard events on the textarea for Shift+Enter to create a new line and Enter to send
+    userInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevents the default Enter behavior (new line)
+            chatForm.dispatchEvent(new Event('submit')); // Manually trigger the form's submit event
+        }
+    });
+
+    /**
+     * Function to add a message to the chat log
+     * @param {string} text - The message text
+     * @param {string} sender - The sender ('user' or 'ai')
+     */
+    function appendMessage(text, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', `${sender}-message`);
+
+        const avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        avatar.textContent = sender === 'user' ? 'U' : 'AI';
+
+        const content = document.createElement('div');
+        content.classList.add('content');
+        // Convert newline characters to <br> tags for proper display
+        content.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
+
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(content);
+        chatLog.appendChild(messageElement);
+
+        // Scroll to the newest message
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    /**
+     * Toggles the send button's disabled state based on input content
+     */
+    function toggleSendButton() {
+        sendButton.disabled = userInput.value.trim() === '';
+    }
+
+    // Initially disable the send button
+    toggleSendButton();
+
+</script>
+
+</body>
+</html>

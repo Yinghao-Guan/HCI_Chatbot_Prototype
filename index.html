@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="shortcut icon" href="/assets/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Peter Guan" />
+    <link rel="manifest" href="/assets/site.webmanifest" />
+
+    <style>
+        /* --- CSS Styles --- */
+
+        /* Basic page reset and font settings */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        /* Main container to center the content */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Large title style */
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+
+        /* Container for the buttons */
+        .button-container {
+            display: flex;
+            gap: 20px; /* Space between buttons */
+        }
+
+        /* Button styling */
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px); /* Slight lift on hover */
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Specific style for the second button */
+        .btn.xai-btn {
+            background-color: #2ecc71;
+        }
+
+        .btn.xai-btn:hover {
+            background-color: #27ae60;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .main-title {
+                font-size: 2.5rem;
+            }
+
+            .button-container {
+                flex-direction: column;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- --- HTML Structure --- -->
+<div class="main-container">
+    <h1 class="main-title">Welcome to the Chatbot Interface</h1>
+    <div class="button-container">
+        <a href="html/non-XAI_version.html" class="btn">Non-XAI Chatbot</a>
+        <a href="html/XAI_Version.html" class="btn xai-btn">XAI Integrated Chatbot</a>
+    </div>
+</div>
+
+</body>
+</html>
