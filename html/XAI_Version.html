@@ -194,6 +194,8 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -250,26 +252,85 @@
         const userText = userInput.value.trim();
         if (userText === '') return;
 
+        // 1. Add the user's message (Fix: now renders as plain text)
         appendMessage(userText, 'user');
+
         userInput.value = '';
         userInput.style.height = 'auto';
         toggleSendButton();
 
-        setTimeout(() => {
-            const aiResponse = "This is an example response from AI model.";
-            appendMessage(aiResponse, 'ai');
-        }, 500);
+        // 3. AI response (STREAMING + MARKDOWN)
+        const aiParagraph = appendMessage('', 'ai');
+        aiParagraph.innerHTML = '▋'; // Typing cursor
+
+        let totalResponseText = "";
+
+        fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userText })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let isFirstChunk = true;
+
+            function readStream() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        return;
+                    }
+                    if (isFirstChunk) {
+                        aiParagraph.innerHTML = ''; // Clear cursor
+                        isFirstChunk = false;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    totalResponseText += chunk;
+
+                    // AI response is parsed as Markdown
+                    aiParagraph.innerHTML = marked.parse(totalResponseText);
+
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                    readStream();
+                }).catch(error => {
+                    console.error('Error reading stream:', error);
+                    aiParagraph.innerHTML += "<br>⚠️ 读取响应流时出错。";
+                });
+            }
+            readStream();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            aiParagraph.innerHTML = "⚠️ 未能连接到本地 AI 后端。";
+        });
     });
 
     userInput.addEventListener('input', toggleSendButton);
 
+    // --- FIX 2: 修复输入法 (IME) 提交问题 ---
     userInput.addEventListener('keydown', function(event) {
+        // 检查用户是否仍在使用输入法组合
+        if (event.isComposing) {
+            return;
+        }
+
+        // 如果按下 Enter 键、没有按 Shift 键，并且不在组合状态
         if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            chatForm.dispatchEvent(new Event('submit'));
+            event.preventDefault(); // 阻止默认的换行
+            chatForm.dispatchEvent(new Event('submit')); // 触发提交
         }
     });
 
+    /**
+     * MODIFIED Function to add a message to the chat log
+     * @param {string} text - The message text
+     * @param {string} sender - The sender ('user' or 'ai')
+     * @returns {HTMLElement} - Returns the <p> element where text is stored
+     */
     function appendMessage(text, sender) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', `${sender}-message`);
@@ -280,12 +341,25 @@
 
         const content = document.createElement('div');
         content.classList.add('content');
-        content.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
 
+        const textParagraph = document.createElement('p');
+
+        // --- FIX 1: 修复用户输入渲染问题 ---
+        if (sender === 'user') {
+            // 将用户输入视为纯文本，并替换换行符
+            textParagraph.innerHTML = text.replace(/\n/g, '<br>');
+        } else {
+            // AI 的输入（初始为空或光标）
+            textParagraph.innerHTML = text;
+        }
+
+        content.appendChild(textParagraph);
         messageElement.appendChild(avatar);
         messageElement.appendChild(content);
         chatLog.appendChild(messageElement);
         chatLog.scrollTop = chatLog.scrollHeight;
+
+        return textParagraph;
     }
 
     function toggleSendButton() {
@@ -300,7 +374,6 @@
 
     emojiButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Set the display emoji to the content of the clicked button
             emojiDisplay.textContent = button.textContent;
         });
     });

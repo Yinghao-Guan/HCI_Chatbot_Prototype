@@ -169,6 +169,8 @@
             }
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -197,34 +199,29 @@
 
 <script>
     // --- JavaScript Logic ---
-
-    // Get elements from the page
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatLog = document.getElementById('chat-log');
     const sendButton = chatForm.querySelector('button');
 
-    // Listen for the form submission event
     chatForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevents the form's default submission behavior
+        event.preventDefault();
         const userText = userInput.value.trim();
         if (userText === '') return;
 
-        // 1. Add the user's message to the chat log
+        // 1. Add the user's message
         appendMessage(userText, 'user');
 
-        // 2. Clear the input field
         userInput.value = '';
         userInput.style.height = 'auto';
-        toggleSendButton(); // Disable the send button
+        toggleSendButton();
 
-        // 3. AI response (NEW STREAMING LOGIC)
-
-        // 3.1. Create an empty AI message bubble and get its <p> element
+        // 3. AI response (STREAMING + MARKDOWN)
         const aiParagraph = appendMessage('', 'ai');
-        aiParagraph.innerHTML = '▋'; // Optional: show a "typing" cursor
+        aiParagraph.innerHTML = '▋'; // Typing cursor
 
-        // 3.2. Start the streaming fetch request
+        let totalResponseText = "";
+
         fetch('http://127.0.0.1:5000/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -234,62 +231,54 @@
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            // Get the tools to read the stream
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let isFirstChunk = true;
 
-            // This function reads the stream chunk by chunk
             function readStream() {
                 reader.read().then(({ done, value }) => {
                     if (done) {
-                        // The stream is finished
                         return;
                     }
-
-                    // On the very first chunk, clear the "typing" cursor
                     if (isFirstChunk) {
-                        aiParagraph.innerHTML = '';
+                        aiParagraph.innerHTML = ''; // Clear cursor
                         isFirstChunk = false;
                     }
 
-                    // Decode the chunk (Uint8Array) to text
                     const chunk = decoder.decode(value, { stream: true });
+                    totalResponseText += chunk;
 
-                    // Append the new text, converting newlines to <br>
-                    aiParagraph.innerHTML += chunk.replace(/\n/g, '<br>');
+                    // AI response is parsed as Markdown
+                    aiParagraph.innerHTML = marked.parse(totalResponseText);
 
-                    // Auto-scroll the chat log
                     chatLog.scrollTop = chatLog.scrollHeight;
-
-                    // Read the next chunk
                     readStream();
                 }).catch(error => {
                     console.error('Error reading stream:', error);
-                    aiParagraph.innerHTML += "<br>⚠️ Error in reading stream";
+                    aiParagraph.innerHTML += "<br>⚠️ Error reading streaming message";
                 });
             }
-
-            // Start reading the stream
             readStream();
-
         })
         .catch(error => {
             console.error('Error:', error);
-            // Show the error inside the AI bubble
-            aiParagraph.innerHTML = "⚠️ Unable to connect to local LLM backend.";
+            aiParagraph.innerHTML = "⚠️ Unable to connect backend LLM";
         });
     });
 
-    // Listen for input events on the textarea
     userInput.addEventListener('input', toggleSendButton);
 
-    // Listen for keyboard events for Shift+Enter vs. Enter
+    // --- FIX 2: 修复输入法 (IME) 提交问题 ---
     userInput.addEventListener('keydown', function(event) {
+        // 检查用户是否仍在使用输入法组合
+        if (event.isComposing) {
+            return;
+        }
+
+        // 如果按下 Enter 键、没有按 Shift 键，并且不在组合状态
         if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            chatForm.dispatchEvent(new Event('submit'));
+            event.preventDefault(); // 阻止默认的换行
+            chatForm.dispatchEvent(new Event('submit')); // 触发提交
         }
     });
 
@@ -310,31 +299,30 @@
         const content = document.createElement('div');
         content.classList.add('content');
 
-        // Create the <p> tag for the text
         const textParagraph = document.createElement('p');
-        textParagraph.innerHTML = text.replace(/\n/g, '<br>'); //
+
+        // --- 用户输入渲染 ---
+        if (sender === 'user') {
+            // 将用户输入视为纯文本，并替换换行符
+            textParagraph.innerHTML = text.replace(/\n/g, '<br>');
+        } else {
+            // AI 的输入（初始为空或光标）
+            textParagraph.innerHTML = text;
+        }
 
         content.appendChild(textParagraph);
         messageElement.appendChild(avatar);
         messageElement.appendChild(content);
         chatLog.appendChild(messageElement);
 
-        // Scroll to the newest message
         chatLog.scrollTop = chatLog.scrollHeight;
-
-        // --- KEY MODIFICATION ---
-        // Return the paragraph element so we can stream into it
-        return textParagraph;
+        return textParagraph; // Return the paragraph element
     }
 
-    /**
-     * Toggles the send button's disabled state based on input content
-     */
     function toggleSendButton() {
         sendButton.disabled = userInput.value.trim() === '';
     }
 
-    // Initially disable the send button
     toggleSendButton();
 
 </script>
