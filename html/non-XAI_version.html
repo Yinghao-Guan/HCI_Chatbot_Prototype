@@ -206,54 +206,98 @@
 
     // Listen for the form submission event
     chatForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevents the form's default submission behavior (reloading the page)
-
-        const userText = userInput.value.trim(); // Get the user's input text and remove leading/trailing spaces
-
-        if (userText === '') {
-            return; // If the user didn't enter anything, do nothing
-        }
+        event.preventDefault(); // Prevents the form's default submission behavior
+        const userText = userInput.value.trim();
+        if (userText === '') return;
 
         // 1. Add the user's message to the chat log
         appendMessage(userText, 'user');
 
         // 2. Clear the input field
         userInput.value = '';
-        userInput.style.height = 'auto'; // Reset height
+        userInput.style.height = 'auto';
         toggleSendButton(); // Disable the send button
 
-        // 3. AI response
+        // 3. AI response (NEW STREAMING LOGIC)
+
+        // 3.1. Create an empty AI message bubble and get its <p> element
+        const aiParagraph = appendMessage('', 'ai');
+        aiParagraph.innerHTML = '▋'; // Optional: show a "typing" cursor
+
+        // 3.2. Start the streaming fetch request
         fetch('http://127.0.0.1:5000/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: userText })
         })
-        .then(response => response.json())
-        .then(data => {
-            appendMessage(data.reply, 'ai');
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Get the tools to read the stream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let isFirstChunk = true;
+
+            // This function reads the stream chunk by chunk
+            function readStream() {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        // The stream is finished
+                        return;
+                    }
+
+                    // On the very first chunk, clear the "typing" cursor
+                    if (isFirstChunk) {
+                        aiParagraph.innerHTML = '';
+                        isFirstChunk = false;
+                    }
+
+                    // Decode the chunk (Uint8Array) to text
+                    const chunk = decoder.decode(value, { stream: true });
+
+                    // Append the new text, converting newlines to <br>
+                    aiParagraph.innerHTML += chunk.replace(/\n/g, '<br>');
+
+                    // Auto-scroll the chat log
+                    chatLog.scrollTop = chatLog.scrollHeight;
+
+                    // Read the next chunk
+                    readStream();
+                }).catch(error => {
+                    console.error('Error reading stream:', error);
+                    aiParagraph.innerHTML += "<br>⚠️ Error in reading stream";
+                });
+            }
+
+            // Start reading the stream
+            readStream();
+
         })
         .catch(error => {
             console.error('Error:', error);
-            appendMessage("⚠️ Failed to connect to the local AI backend.", 'ai');
+            // Show the error inside the AI bubble
+            aiParagraph.innerHTML = "⚠️ Unable to connect to local LLM backend.";
         });
-
     });
 
-    // Listen for input events on the textarea to enable/disable the send button
+    // Listen for input events on the textarea
     userInput.addEventListener('input', toggleSendButton);
 
-    // Listen for keyboard events on the textarea for Shift+Enter to create a new line and Enter to send
+    // Listen for keyboard events for Shift+Enter vs. Enter
     userInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault(); // Prevents the default Enter behavior (new line)
-            chatForm.dispatchEvent(new Event('submit')); // Manually trigger the form's submit event
+            event.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
         }
     });
 
     /**
-     * Function to add a message to the chat log
+     * MODIFIED Function to add a message to the chat log
      * @param {string} text - The message text
      * @param {string} sender - The sender ('user' or 'ai')
+     * @returns {HTMLElement} - Returns the <p> element where text is stored
      */
     function appendMessage(text, sender) {
         const messageElement = document.createElement('div');
@@ -265,15 +309,22 @@
 
         const content = document.createElement('div');
         content.classList.add('content');
-        // Convert newline characters to <br> tags for proper display
-        content.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
 
+        // Create the <p> tag for the text
+        const textParagraph = document.createElement('p');
+        textParagraph.innerHTML = text.replace(/\n/g, '<br>'); //
+
+        content.appendChild(textParagraph);
         messageElement.appendChild(avatar);
         messageElement.appendChild(content);
         chatLog.appendChild(messageElement);
 
         // Scroll to the newest message
         chatLog.scrollTop = chatLog.scrollHeight;
+
+        // --- KEY MODIFICATION ---
+        // Return the paragraph element so we can stream into it
+        return textParagraph;
     }
 
     /**
