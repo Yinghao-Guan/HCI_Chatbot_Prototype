@@ -222,12 +222,21 @@
         userInput.style.height = 'auto'; // Reset height
         toggleSendButton(); // Disable the send button
 
-        // 3. Simulate an AI response
-        // Use setTimeout to create a brief delay, making the interaction feel more natural
-        setTimeout(() => {
-            const aiResponse = "This is an example response from AI model.";
-            appendMessage(aiResponse, 'ai');
-        }, 500); // Respond after 500 milliseconds (0.5 seconds)
+        // 3. AI response
+        fetch('http://127.0.0.1:5000/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            appendMessage(data.reply, 'ai');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            appendMessage("⚠️ Failed to connect to the local AI backend.", 'ai');
+        });
+
     });
 
     // Listen for input events on the textarea to enable/disable the send button
