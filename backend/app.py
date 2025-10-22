@@ -33,27 +33,45 @@ def calculate_text_metrics(text: str) -> dict:
     }
 
 
-# --- 静态文件服务路由 (保持不变) ---
+# --- 静态文件服务路由 ---
 
 @app.route('/')
 def root():
+    """根路由：服务 index.html"""
+    # index.html 位于项目根目录
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/index.html')
+def serve_index():
+    """显式服务 index.html (解决 404 错误)"""
+    # 显式处理对 /index.html 的请求
     return send_from_directory(app.static_folder, 'index.html')
 
 
+# 确保 html 目录下的所有文件可以被访问
 @app.route('/html/<path:filename>')
 def serve_html(filename):
+    """服务 html 目录下的静态文件"""
     return send_from_directory(os.path.join(app.static_folder, 'html'), filename)
 
-
+# 确保 assets 目录下的所有文件可以被访问
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
+    """服务 assets 目录下的静态文件"""
     return send_from_directory(os.path.join(app.static_folder, 'assets'), filename)
 
 
-# --- 实验初始化路由 (保持不变) ---
+# --- 实验初始化路由 ---
 
 @app.route('/start_experiment', methods=['POST'])
 def start_experiment():
+    """
+    实验初始化路由：
+    1. 接收 PID 和 Condition (XAI/NON_XAI)。
+    2. 清除旧的 LLM 会话。
+    3. 初始化会话状态并保存到数据文件。
+    4. 返回 Consent 页面 URL。
+    """
     try:
         data = request.json
         participant_id = data.get("participant_id")
@@ -64,10 +82,12 @@ def start_experiment():
 
         llm_service.clear_session(participant_id)
 
-        # 初始化数据并获取下一步 URL (Demographics)
-        next_url = data_manager.init_participant_session(participant_id, condition)
+        # 初始化数据 (这也会写入 INIT 记录)
+        data_manager.init_participant_session(participant_id, condition)
 
-        return jsonify({"success": True, "next_url": next_url})
+        # 返回 Consent 页面 URL (这是受试者看到的第一个页面)
+        # 注意: Consent Page现在是 /index.html，且流程控制由 Consent Page处理
+        return jsonify({"success": True, "next_url": "/index.html"})
 
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -76,15 +96,37 @@ def start_experiment():
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
 
-# --- 通用数据保存与流程控制路由 (保持不变) ---
+# --- 通用数据保存与流程控制路由 ---
+
+# 注意：为了让 Consent 页面也能使用流程控制，我们需要调整 EXPERIMENT_STEPS
+# 新的步骤顺序为：INIT(0), CONSENT_AGREEMENT, DEMOGRAPHICS(1), BASELINE_MOOD(2)...
+# 但是我们不将 CONSENT_AGREEMENT 放入 EXPERIMENT_STEPS，而是使用它的 next_step_index = 0
+# 来指向 EXPERIMENT_STEPS 中的第一个真正数据收集步骤：DEMOGRAPHICS (索引 0)
+# 让我们修改 EXPERIMENT_STEPS 数组以匹配流程：
+
+# backend/config.py (你需要修改 EXPERIMENT_STEPS 如下, 在下一步我再提供完整 config.py)
+# EXPERIMENT_STEPS = [
+#     "DEMOGRAPHICS",
+#     "BASELINE_MOOD",
+#     "INSTRUCTIONS",
+#     "DIALOGUE",
+#     "POST_QUESTIONNAIRE",
+#     "OPEN_ENDED_QS",
+#     "DEBRIEF"
+# ]
+
 
 @app.route('/save_data', methods=['POST'])
 def save_data():
+    """
+    通用数据保存路由：用于保存问卷、情绪、知情同意等数据并进行流程控制。
+    """
     try:
         data = request.json
         participant_id = data.get("participant_id")
         step_name = data.get("step_name")
         step_data = data.get("data")
+        # current_step_index 现在代表 EXPERIMENT_STEPS 中的**当前**步骤的索引
         current_step_index = data.get("current_step_index")
 
         if not participant_id or not step_name or step_data is None or current_step_index is None:
@@ -94,9 +136,13 @@ def save_data():
         data_manager.save_participant_data(participant_id, step_name, step_data)
 
         # 2. 确定下一个页面的 URL (流程控制)
-        next_step_index = current_step_index + 1
+        # Consent 页面使用 current_step_index = 0，指向 EXPERIMENT_STEPS[0] (DEMOGRAPHICS)
+        # 其他页面使用 current_step_index = 1, 2, 3...
+
+        next_step_index = current_step_index
 
         if next_step_index >= len(EXPERIMENT_STEPS):
+            # 流程结束，默认跳转到 Debrief
             next_url = "/html/debrief.html"
         else:
             next_step_key = EXPERIMENT_STEPS[next_step_index]
@@ -107,11 +153,20 @@ def save_data():
                 condition = status.get("condition", "NON_XAI")
                 next_url = VERSION_MAP.get(condition, VERSION_MAP["NON_XAI"])
             else:
+                # 其他步骤，按 EXPERIMENT_STEPS 数组命名规则跳转
                 next_url = f"/html/{next_step_key.lower()}.html"
 
-        return jsonify({"success": True, "next_url": next_url})
+        # **重要**: 返回时告诉前端下一步是哪一个步骤的索引 (用于下一次 save_data)
+        # 在 Consent 页面中，current_step_index 只是一个占位符，我们将它返回给下一个页面
+        # 下一个页面的 current_step_index 应该是本次的 index + 1
+        return jsonify({
+            "success": True,
+            "next_url": next_url,
+            "next_step_index": current_step_index + 1
+        })
 
     except Exception as e:
+        # ... (错误处理不变) ...
         print(f"Error in /save_data: {e}")
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
@@ -225,3 +280,5 @@ if __name__ == "__main__":
     print("🚀 Starting Flask server on http://127.0.0.1:5000")
     print(f"💾 Data will be saved to: {data_manager.DATA_DIR}")
     app.run(debug=True, port=5000)
+
+    # run on "http://127.0.0.1:5000/html/admin_setup.html"

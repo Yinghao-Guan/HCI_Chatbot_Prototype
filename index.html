@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage</title>
-    <!-- Favicon -->
+    <title>Experiment Consent</title>
     <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="shortcut icon" href="/assets/favicon.ico" />
@@ -32,34 +31,67 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
             height: 100%;
             padding: 20px;
             box-sizing: border-box;
+            max-width: 900px;
+            margin: 0 auto; /* Center container horizontally */
+            text-align: left;
         }
 
-        /* Large title style */
-        .main-title {
-            font-size: 3.5rem;
-            font-weight: 700;
+        /* Form and Consent Content */
+        .consent-section {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .consent-section h1 {
+            font-size: 2rem;
             color: #2c3e50;
-            margin-bottom: 40px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        /* Container for the buttons */
-        .button-container {
+        .consent-section h3 {
+            color: #3498db;
+            margin-top: 20px;
+        }
+
+        .consent-text {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-group {
             display: flex;
-            gap: 20px; /* Space between buttons */
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+
+        #consent-checkbox {
+            margin-top: 5px; /* Aligns checkbox with the top of the text */
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
         }
 
         /* Button styling */
-        .btn {
-            display: inline-block;
+        .btn-consent {
+            display: block;
+            width: 100%;
             padding: 15px 30px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: #fff;
-            background-color: #3498db;
+            background-color: #2ecc71;
             border: none;
             border-radius: 8px;
             text-decoration: none;
@@ -68,47 +100,158 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .btn:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px); /* Slight lift on hover */
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        /* Specific style for the second button */
-        .btn.xai-btn {
-            background-color: #2ecc71;
-        }
-
-        .btn.xai-btn:hover {
+        .btn-consent:hover {
             background-color: #27ae60;
+            transform: translateY(-2px);
         }
 
-        /* Responsive adjustments for smaller screens */
-        @media (max-width: 600px) {
-            .main-title {
-                font-size: 2.5rem;
-            }
-
-            .button-container {
-                flex-direction: column;
-            }
+        .btn-consent:disabled {
+            background-color: #a0c3e8;
+            cursor: not-allowed;
         }
 
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* Hidden PID for reference */
+        #pid-display {
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-<!-- --- HTML Structure --- -->
 <div class="main-container">
-    <h1 class="main-title">Welcome to the Chatbot Interface</h1>
-    <div class="button-container">
-        <a href="html/non-XAI_version.html" class="btn">Non-XAI Chatbot</a>
-        <a href="html/XAI_Version.html" class="btn xai-btn">XAI Integrated Chatbot</a>
+    <div class="consent-section">
+        <h1>Research Experiment: Informed Consent Form</h1>
+
+        <div class="consent-text">
+            <h3>Purpose of the Study</h3>
+            <p>You are invited to participate in a research study on human-computer interaction and emotional support chatbots. The purpose of this study is to evaluate how different types of artificial intelligence feedback affect user experience and trust.</p>
+
+            <h3>Procedures</h3>
+            <p>If you agree to participate, you will first fill out a short demographic form and a baseline mood survey. Following this, you will engage in a conversation with an AI chatbot regarding a pre-defined emotional support scenario. The conversation will last approximately 15 minutes. After the conversation, you will complete a post-experiment questionnaire and answer a few open-ended questions.</p>
+
+            <h3>Confidentiality</h3>
+            <p>Your privacy will be protected. All data collected will be anonymized using a unique participant ID that is not linked to any personal identifying information (such as your name or contact details). **No raw conversation text will be stored.** Only analytical metrics (e.g., length, word count, emotional scores from a separate model) will be saved for analysis.</p>
+
+            <h3>Voluntary Participation</h3>
+            <p>Your participation is completely voluntary. You may choose not to participate or to withdraw from the study at any time without penalty or loss of benefits. Choosing not to participate will not affect your relationship with the researchers or your class standing.</p>
+
+            <h3>Contact Information</h3>
+            <p>If you have any questions about this study, you may contact [Researcher Name] at [Researcher Email].</p>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="consent-checkbox">
+            <label for="consent-checkbox">
+                I agree to participate, fully understand the content and risks of the experiment, and I know I can withdraw at any time without penalty.
+            </label>
+        </div>
+
+        <button id="consent-btn" class="btn-consent" disabled>I Agree and Continue</button>
+        <p id="error-message" class="error-message" style="display: none;"></p>
+        <p id="pid-display">Participant ID: Loading...</p>
     </div>
 </div>
+
+<script>
+    const CONSENT_STEP_INDEX = 0; // "INIT" 后的第一个有效步骤 DEMOGRAPHICS 的前一步
+    const CONSENT_STEP_NAME = "CONSENT_AGREEMENT";
+
+    const consentButton = document.getElementById('consent-btn');
+    const consentCheckbox = document.getElementById('consent-checkbox');
+    const errorMessage = document.getElementById('error-message');
+    const pidDisplay = document.getElementById('pid-display');
+
+    let participantId = null;
+
+    // --- 初始化和检查 PID ---
+    function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        participantId = urlParams.get('pid');
+
+        if (!participantId) {
+            // 如果没有 PID，说明受试者直接打开了 Consent 页面，应该跳转到 Admin Setup
+            pidDisplay.textContent = "Error: Participant ID missing. Redirecting to setup...";
+            pidDisplay.style.color = 'red';
+            setTimeout(() => {
+                window.location.href = '/html/admin_setup.html';
+            }, 3000);
+            return false;
+        }
+
+        pidDisplay.textContent = `Participant ID: ${participantId}`;
+        sessionStorage.setItem('participant_id', participantId); // 存储 PID 供后续页面使用
+        return true;
+    }
+
+    // 启用/禁用按钮
+    consentCheckbox.addEventListener('change', function() {
+        consentButton.disabled = !this.checked;
+    });
+
+    consentButton.addEventListener('click', function(event) {
+        event.preventDefault();
+
+        if (!participantId) {
+            errorMessage.textContent = "Error: Session not initialized. Please restart from Admin Setup.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        if (!consentCheckbox.checked) {
+            errorMessage.textContent = "Please check the box to confirm your consent.";
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        // 禁用按钮并显示加载状态
+        consentButton.disabled = true;
+        consentButton.textContent = 'Saving Consent and Continuing...';
+        errorMessage.style.display = 'none';
+
+        // 1. 调用后端路由记录用户同意数据
+        fetch('http://127.0.0.1:5000/save_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                participant_id: participantId,
+                step_name: CONSENT_STEP_NAME, // 新增的步骤名
+                data: {
+                    consent_given: true,
+                    time_on_page: new Date().getTime() // 可以记录页面停留时间
+                },
+                current_step_index: CONSENT_STEP_INDEX
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 2. 跳转到下一个页面 (Demographics)
+                window.location.href = data.next_url;
+            } else {
+                throw new Error(data.error || 'Unknown error during consent save.');
+            }
+        })
+        .catch(error => {
+            console.error('Consent save error:', error);
+            errorMessage.textContent = `Error: ${error.message}`;
+            errorMessage.style.display = 'block';
+            consentButton.disabled = false;
+            consentButton.textContent = 'I Agree and Continue';
+        });
+    });
+
+    // 页面启动时，检查 PID
+    initializePage();
+</script>
 
 </body>
 </html>
