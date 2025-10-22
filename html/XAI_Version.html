@@ -242,6 +242,8 @@
     // --- JavaScript Logic ---
 
     // --- Chat Logic (Left Column) ---
+    const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
+
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatLog = document.getElementById('chat-log');
@@ -252,23 +254,28 @@
         const userText = userInput.value.trim();
         if (userText === '') return;
 
-        // 1. Add the user's message (Fix: now renders as plain text)
+        // Add the user's message (Fix: now renders as plain text)
         appendMessage(userText, 'user');
 
         userInput.value = '';
         userInput.style.height = 'auto';
         toggleSendButton();
 
-        // 3. AI response (STREAMING + MARKDOWN)
+        // AI response (STREAMING + MARKDOWN)
         const aiParagraph = appendMessage('', 'ai');
         aiParagraph.innerHTML = '▋'; // Typing cursor
 
         let totalResponseText = "";
 
+        // 然后，修改 chatForm.addEventListener('submit', ...) 内部的 fetch 调用：
         fetch('http://127.0.0.1:5000/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: userText })
+            // 确保在 body 中添加 participant_id
+            body: JSON.stringify({
+                message: userText,
+                participant_id: PARTICIPANT_ID // <--- 新增的字段
+            })
         })
         .then(response => {
             if (!response.ok) {
@@ -311,7 +318,7 @@
 
     userInput.addEventListener('input', toggleSendButton);
 
-    // --- FIX 2: 修复输入法 (IME) 提交问题 ---
+    // --- 输入法 (IME) 提交 ---
     userInput.addEventListener('keydown', function(event) {
         // 检查用户是否仍在使用输入法组合
         if (event.isComposing) {
@@ -344,7 +351,7 @@
 
         const textParagraph = document.createElement('p');
 
-        // --- FIX 1: 修复用户输入渲染问题 ---
+        // --- 用户输入不渲染Markdown ---
         if (sender === 'user') {
             // 将用户输入视为纯文本，并替换换行符
             textParagraph.innerHTML = text.replace(/\n/g, '<br>');

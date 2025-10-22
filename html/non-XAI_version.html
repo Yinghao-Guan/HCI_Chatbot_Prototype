@@ -199,6 +199,8 @@
 
 <script>
     // --- JavaScript Logic ---
+    const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
+
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatLog = document.getElementById('chat-log');
@@ -225,7 +227,11 @@
         fetch('http://127.0.0.1:5000/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: userText })
+            // 确保在 body 中添加 participant_id
+            body: JSON.stringify({
+                message: userText,
+                participant_id: PARTICIPANT_ID // <--- 新增的字段
+            })
         })
         .then(response => {
             if (!response.ok) {
@@ -268,7 +274,7 @@
 
     userInput.addEventListener('input', toggleSendButton);
 
-    // --- FIX 2: 修复输入法 (IME) 提交问题 ---
+    // --- 输入法 (IME) 提交 ---
     userInput.addEventListener('keydown', function(event) {
         // 检查用户是否仍在使用输入法组合
         if (event.isComposing) {
