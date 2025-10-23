@@ -238,51 +238,13 @@ def chat():
     return Response(generate_stream_and_log(), mimetype='text/plain')
 
 
-# --- 新增路由：保存对话结束指标 (如情绪波动) ---
-
-@app.route('/save_dialogue_end_metrics', methods=['POST'])
-def save_dialogue_end_metrics():
-    """用于在对话结束后保存最终指标（如情绪波动），并控制流程跳转。"""
-    try:
-        data = request.json
-        participant_id = data.get("participant_id")
-
-        if not participant_id:
-            return jsonify({"error": "Missing participant_id"}), 400
-
-        # --- TODO: 情绪波动计算的占位符 ---
-        # 假设情绪得分列表为 session['sentiment_scores']，但目前为空或为 None
-        # 实际计算: max(scores) - min(scores)
-        emotion_fluctuation_value = 0.0
-
-        session = llm_service.get_session(participant_id)
-
-        end_data = {
-            "emotion_fluctuation": emotion_fluctuation_value,
-            "total_turns": session['turn_count']
-        }
-
-        # 保存对话结束数据
-        data_manager.save_participant_data(participant_id, "DIALOGUE_END", end_data)
-
-        # 流程控制：跳转到 Post-questionnaire 页面
-        # DIALOGUE 步骤的下一个是 POST_QUESTIONNAIRE
-        next_step_index = EXPERIMENT_STEPS.index("DIALOGUE") + 1
-        next_step_key = EXPERIMENT_STEPS[next_step_index]
-        next_url = f"/html/{next_step_key.lower()}.html"
-
-        return jsonify({"success": True, "next_url": next_url})
-
-    except Exception as e:
-        print(f"Error in /save_dialogue_end_metrics: {e}")
-        return jsonify({"error": f"Internal server error: {e}"}), 500
-
-
-# /end_dialogue 路由
+# --- (已修改) /end_dialogue 路由 ---
 @app.route('/end_dialogue', methods=['POST'])
 def end_dialogue():
     """
-    Terminates the dialogue session, records the end time, and transitions to the next step.
+    终止对话会话：
+    1. 记录结束时间、总轮数和情绪波动占位符。
+    2. 转换到下一个实验步骤 (POST_QUESTIONNAIRE)。
     """
     try:
         data = request.json
@@ -291,13 +253,18 @@ def end_dialogue():
         if not participant_id:
             return jsonify({"error": "Missing participant_id"}), 400
 
-        # 1. 记录对话结束状态和时间戳
-        DIALOGUE_STEP_INDEX = 3
+        # --- 新增：获取 LLM 会话数据 ---
+        session = llm_service.get_session(participant_id)
 
-        # 使用 time.time() 获取更可靠的 Unix 时间戳
+        # 1. 记录对话结束状态和指标
+        DIALOGUE_STEP_INDEX = 3 # "DIALOGUE" 在 EXPERIMENT_STEPS 中的索引
+
+        # --- 修改：添加 total_turns 和 emotion_fluctuation 占位符 ---
         dialogue_end_data = {
             "status": "Completed by user",
-            "end_time": time.time()
+            "end_time": time.time(),
+            "total_turns": session['turn_count'],
+            "emotion_fluctuation": None # 为未来的情感分析模型预留的占位符
         }
 
         data_manager.save_participant_data(participant_id, "DIALOGUE_END", dialogue_end_data)
@@ -323,6 +290,10 @@ def end_dialogue():
         # 确保返回一个 JSON 错误响应，而不是让 Flask 默认返回 500 HTML
         return jsonify(
             {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
+
+
+# --- (已移除) /save_dialogue_end_metrics 路由 ---
+# 此路由的逻辑已合并到 /end_dialogue 中。
 
 
 # --- 运行 Flask 服务器 ---
