@@ -277,7 +277,8 @@ def save_dialogue_end_metrics():
         print(f"Error in /save_dialogue_end_metrics: {e}")
         return jsonify({"error": f"Internal server error: {e}"}), 500
 
-# end_dialogue 路由，用于记录对话结束并返回下一个问卷页面的 URL
+
+# /end_dialogue 路由
 @app.route('/end_dialogue', methods=['POST'])
 def end_dialogue():
     """
@@ -291,12 +292,15 @@ def end_dialogue():
             return jsonify({"error": "Missing participant_id"}), 400
 
         # 1. 记录对话结束状态和时间戳
-        # DIALOGUE 步骤的索引是 3。下一个步骤的索引是 4 (POST_QUESTIONNAIRE)。
         DIALOGUE_STEP_INDEX = 3
 
-        # 记录数据：使用 DIALOGUE_END 步骤名称来表示对话阶段的结束
-        data_manager.save_participant_data(participant_id, "DIALOGUE_END",
-                                           {"status": "Completed by user", "timestamp": datetime.now().isoformat()})
+        # 使用 time.time() 获取更可靠的 Unix 时间戳
+        dialogue_end_data = {
+            "status": "Completed by user",
+            "end_time": time.time()
+        }
+
+        data_manager.save_participant_data(participant_id, "DIALOGUE_END", dialogue_end_data)
 
         # 2. 确定下一个步骤的 URL (POST_QUESTIONNAIRE)
         next_step_index = DIALOGUE_STEP_INDEX + 1
@@ -311,12 +315,12 @@ def end_dialogue():
         return jsonify({
             "success": True,
             "next_url": next_url,
-            # 告诉前端下一个流程点的索引（虽然主要由后端控制，但最好保持一致性）
-            "next_step_index": next_step_index + 1
+            "next_step_index": next_step_index
         })
 
     except Exception as e:
         print(f"Error in /end_dialogue: {e}")
+        # 确保返回一个 JSON 错误响应，而不是让 Flask 默认返回 500 HTML
         return jsonify(
             {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
 
@@ -325,6 +329,10 @@ def end_dialogue():
 if __name__ == "__main__":
     print("🚀 Starting Flask server on http://127.0.0.1:5000")
     print(f"💾 Data will be saved to: {data_manager.DATA_DIR}")
-    app.run(debug=True, port=5000)
+
+    # 关键修改：
+    # 1. 设置 threaded=False, processes=1 确保单进程稳定运行
+    # 2. 禁用 reloader，防止文件变化导致意外重启
+    app.run(debug=False, port=5000, threaded=False, processes=1, use_reloader=False)
 
     # run on "http://127.0.0.1:5000/html/admin_setup.html"

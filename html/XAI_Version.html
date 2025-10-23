@@ -351,7 +351,15 @@
     // --- JavaScript Logic ---
 
     // --- Chat Logic (Left Column) ---
-    const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
+    //const PARTICIPANT_ID = "TEMP_TEST_ID_001"; // <--- 临时设置一个 ID
+    // 确保从 Session Storage 中获取 participant_id
+    const participantId = sessionStorage.getItem('participant_id');
+
+    if (!participantId) {
+        // Fallback error handling if PID is missing (good practice)
+        console.error("Participant ID not found in sessionStorage. Cannot proceed.");
+        // 可以添加 UI 提示或重定向到 admin_setup.html
+    }
 
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
@@ -383,7 +391,7 @@
             // 确保在 body 中添加 participant_id
             body: JSON.stringify({
                 message: userText,
-                participant_id: PARTICIPANT_ID // <--- 新增的字段
+                participant_id: participantId
             })
         })
         .then(response => {
@@ -532,14 +540,14 @@
         endDialogueButton.disabled = true;
 
         try {
-            const participantId = sessionStorage.getItem('participant_id');
+            // const participantId = sessionStorage.getItem('participant_id');
 
             // 1. 调用新的后端路由来完成对话并获取下一个 URL
             const response = await fetch('http://127.0.0.1:5000/end_dialogue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    participant_id: participantId,
+                    participant_id: participantId, // <--- 使用外部获取的变量
                 })
             });
 
