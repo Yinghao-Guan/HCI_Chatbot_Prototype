@@ -6,7 +6,7 @@ import time
 
 from backend import llm_service
 from backend import data_manager
-from backend.config import VERSION_MAP, EXPERIMENT_STEPS
+from backend.config import VERSION_MAP, EXPERIMENT_STEPS, INSTRUCTION_VERSION_MAP
 
 # --- Flask App Setup ---
 project_root = os.path.dirname(os.path.abspath(__file__))
@@ -116,6 +116,8 @@ def start_experiment():
 # ]
 
 
+# --- 通用数据保存与流程控制路由 ---
+
 @app.route('/save_data', methods=['POST'])
 def save_data():
     """
@@ -126,7 +128,7 @@ def save_data():
         participant_id = data.get("participant_id")
         step_name = data.get("step_name")
         step_data = data.get("data")
-        # current_step_index 现在代表 EXPERIMENT_STEPS 中的**当前**步骤的索引
+        # current_step_index 代表 EXPERIMENT_STEPS 中的**下一个**步骤的索引
         current_step_index = data.get("current_step_index")
 
         if not participant_id or not step_name or step_data is None or current_step_index is None:
@@ -136,37 +138,37 @@ def save_data():
         data_manager.save_participant_data(participant_id, step_name, step_data)
 
         # 2. 确定下一个页面的 URL (流程控制)
-        # Consent 页面使用 current_step_index = 0，指向 EXPERIMENT_STEPS[0] (DEMOGRAPHICS)
-        # 其他页面使用 current_step_index = 1, 2, 3...
-
         next_step_index = current_step_index
 
         if next_step_index >= len(EXPERIMENT_STEPS):
-            # 流程结束，默认跳转到 Debrief
             next_url = "/html/debrief.html"
+            next_step_key = "DEBRIEF"
         else:
             next_step_key = EXPERIMENT_STEPS[next_step_index]
 
-            if next_step_key == "DIALOGUE":
-                # 特殊处理：获取实验条件对应的聊天页面 URL
+            # --- 关键逻辑：Instructions 页面版本选择 ---
+            if next_step_key == "INSTRUCTIONS":
+                status = data_manager.get_participant_status(participant_id)
+                condition = status.get("condition", "NON_XAI")
+                next_url = INSTRUCTION_VERSION_MAP.get(condition, INSTRUCTION_VERSION_MAP["NON_XAI"])
+            # --- 关键逻辑：DIALOGUE 页面版本选择 ---
+            elif next_step_key == "DIALOGUE":
                 status = data_manager.get_participant_status(participant_id)
                 condition = status.get("condition", "NON_XAI")
                 next_url = VERSION_MAP.get(condition, VERSION_MAP["NON_XAI"])
+            # --- 其他页面 ---
             else:
-                # 其他步骤，按 EXPERIMENT_STEPS 数组命名规则跳转
                 next_url = f"/html/{next_step_key.lower()}.html"
 
-        # **重要**: 返回时告诉前端下一步是哪一个步骤的索引 (用于下一次 save_data)
-        # 在 Consent 页面中，current_step_index 只是一个占位符，我们将它返回给下一个页面
-        # 下一个页面的 current_step_index 应该是本次的 index + 1
+        # 返回时告诉前端下一步是哪一个步骤的索引
         return jsonify({
             "success": True,
             "next_url": next_url,
+            # IMPORTANT: 下一个页面跳转后的 next_step_index 应该为当前 index + 1
             "next_step_index": current_step_index + 1
         })
 
     except Exception as e:
-        # ... (错误处理不变) ...
         print(f"Error in /save_data: {e}")
         return jsonify({"error": f"Internal server error: {e}"}), 500
 

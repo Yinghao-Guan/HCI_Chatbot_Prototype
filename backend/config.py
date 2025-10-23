@@ -22,16 +22,26 @@ SUMMARY_INTERVAL = 5
 # 实验数据存储路径
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
+# backend/config.py
+
+# ... (顶部配置保持不变) ...
+
 # 实验版本配置 (用于手动指定)
 VERSION_MAP = {
     "XAI": "/html/XAI_Version.html",
     "NON_XAI": "/html/non-XAI_version.html"
 }
 
+# Instruction 页面版本配置
+INSTRUCTION_VERSION_MAP = {
+    "XAI": "/html/instructions_xai.html",
+    "NON_XAI": "/html/instructions_non_xai.html"
+}
+
 # 实验步骤序列 (用于流程控制)
 # 索引 0: DEMOGRAPHICS
 # 索引 1: BASELINE_MOOD
-# 索引 2: INSTRUCTIONS
+# 索引 2: INSTRUCTIONS (现在只是一个占位符，实际跳转根据条件)
 # 索引 3: DIALOGUE
 # 索引 4: POST_QUESTIONNAIRE
 # 索引 5: OPEN_ENDED_QS
