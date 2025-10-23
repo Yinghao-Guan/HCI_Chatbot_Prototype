@@ -4,6 +4,7 @@ import os
 import json
 import time
 from datetime import datetime
+import csv
 
 from backend import llm_service
 from backend import data_manager
@@ -292,8 +293,56 @@ def end_dialogue():
             {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
 
 
-# --- (已移除) /save_dialogue_end_metrics 路由 ---
-# 此路由的逻辑已合并到 /end_dialogue 中。
+CONTACT_FILE = os.path.join(data_manager.DATA_DIR, "follow_up_contacts.csv")
+
+
+def save_contact_to_separate_file(participant_id: str, email: str):
+    """
+    将联系信息写入一个与主要匿名数据分离的 CSV 文件。
+    """
+    header = ["timestamp", "participant_id", "email"]
+    data = [time.time(), participant_id, email]
+
+    file_exists = os.path.exists(CONTACT_FILE)
+
+    try:
+        with open(CONTACT_FILE, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            # 如果文件不存在，则写入标题行
+            if not file_exists:
+                writer.writerow(header)
+
+            # 写入数据行
+            writer.writerow(data)
+
+        print(f"✅ Contact data saved separately for PID {participant_id}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to save contact data: {e}")
+        return False
+
+
+@app.route('/save_contact', methods=['POST'])
+def save_contact():
+    """
+    用于接收访谈联系信息，并将数据写入与问卷分离的单独文件。
+    """
+    try:
+        data = request.json
+        participant_id = data.get("participant_id")
+        email = data.get("email")
+
+        if not participant_id or not email:
+            return jsonify({"error": "Missing participant_id or email"}), 400
+
+        if save_contact_to_separate_file(participant_id, email):
+            return jsonify({"success": True})
+        else:
+            return jsonify({"error": "Failed to write contact file."}), 500
+
+    except Exception as e:
+        print(f"Error in /save_contact: {e}")
+        return jsonify({"error": "Internal server error during contact save."}), 500
 
 
 # --- 运行 Flask 服务器 ---
