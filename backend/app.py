@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import json
 import time
+from datetime import datetime
 
 from backend import llm_service
 from backend import data_manager
@@ -275,6 +276,49 @@ def save_dialogue_end_metrics():
     except Exception as e:
         print(f"Error in /save_dialogue_end_metrics: {e}")
         return jsonify({"error": f"Internal server error: {e}"}), 500
+
+# end_dialogue 路由，用于记录对话结束并返回下一个问卷页面的 URL
+@app.route('/end_dialogue', methods=['POST'])
+def end_dialogue():
+    """
+    Terminates the dialogue session, records the end time, and transitions to the next step.
+    """
+    try:
+        data = request.json
+        participant_id = data.get("participant_id")
+
+        if not participant_id:
+            return jsonify({"error": "Missing participant_id"}), 400
+
+        # 1. 记录对话结束状态和时间戳
+        # DIALOGUE 步骤的索引是 3。下一个步骤的索引是 4 (POST_QUESTIONNAIRE)。
+        DIALOGUE_STEP_INDEX = 3
+
+        # 记录数据：使用 DIALOGUE_END 步骤名称来表示对话阶段的结束
+        data_manager.save_participant_data(participant_id, "DIALOGUE_END",
+                                           {"status": "Completed by user", "timestamp": datetime.now().isoformat()})
+
+        # 2. 确定下一个步骤的 URL (POST_QUESTIONNAIRE)
+        next_step_index = DIALOGUE_STEP_INDEX + 1
+
+        if next_step_index >= len(EXPERIMENT_STEPS):
+            next_url = "/html/debrief.html"
+        else:
+            next_step_key = EXPERIMENT_STEPS[next_step_index]  # 此时为 POST_QUESTIONNAIRE
+            next_url = f"/html/{next_step_key.lower()}.html"
+
+        # 3. 返回下一个页面的 URL
+        return jsonify({
+            "success": True,
+            "next_url": next_url,
+            # 告诉前端下一个流程点的索引（虽然主要由后端控制，但最好保持一致性）
+            "next_step_index": next_step_index + 1
+        })
+
+    except Exception as e:
+        print(f"Error in /end_dialogue: {e}")
+        return jsonify(
+            {"error": "Internal server error during dialogue termination. Please contact the experimenter."}), 500
 
 
 # --- 运行 Flask 服务器 ---
