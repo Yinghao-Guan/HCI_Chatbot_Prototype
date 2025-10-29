@@ -1,0 +1,156 @@
+# ==============================
+# OS & Editor Ignore
+# ==============================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+__MACOSX/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+
+# PyCharm / IntelliJ
+.idea/
+
+# ==============================
+# Python
+# ==============================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# Usually these files are written by a python script from a template
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Flask specific
+instance/
+*.db
+*.sqlite3
+*.sqlite
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy / type checker
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# ==============================
+# Node / Frontend
+# ==============================
+
+# Node dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.cache/
+.next/
+out/
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==============================
+# Logs, Data, Temp Files
+# ==============================
+logs/
+*.log
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
+data/
+
+# ==============================
+# Other
+# ==============================
+# Backup / temp files
+*.bak
+*.swp
+*.swo
+*.tmp
+
+
+# Ignore ollama model cache or embeddings (if you generate local model files)
+ollama_models/
+ollama_cache/
