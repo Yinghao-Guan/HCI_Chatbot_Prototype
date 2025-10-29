@@ -74,16 +74,18 @@
     <form id="setup-form">
         <div class="input-group">
             <label for="participant_id">Participant ID:</label>
-            <input type="text" id="participant_id" required placeholder="e.g., P_001_XAI">
+            <input type="text" id="participant_id" required placeholder="e.g., P_001_AB">
         </div>
+
         <div class="input-group">
-            <label for="condition">Experiment Condition:</label>
-            <select id="condition" required>
-                <option value="" disabled selected>Select Condition</option>
-                <option value="XAI">XAI Version</option>
-                <option value="NON_XAI">Non-XAI Version</option>
+            <label for="condition_order">Condition Order (Counterbalance):</label>
+            <select id="condition_order" required>
+                <option value="" disabled selected>Select Order</option>
+                <option value="AB">AB (XAI First, then Non-XAI)</option>
+                <option value="BA">BA (Non-XAI First, then XAI)</option>
             </select>
         </div>
+
         <button type="submit" id="start-btn">Start Experiment & Go to Consent</button>
         <p id="error-message" class="error-message" style="display: none;"></p>
     </form>
@@ -93,17 +95,22 @@
     const form = document.getElementById('setup-form');
     const startButton = document.getElementById('start-btn');
     const participantIdInput = document.getElementById('participant_id');
-    const conditionSelect = document.getElementById('condition');
+    // MODIFIED: Changed from 'conditionSelect'
+    const conditionOrderSelect = document.getElementById('condition_order');
     const errorMessage = document.getElementById('error-message');
+
+
 
     form.addEventListener('submit', function(event) {
         event.preventDefault();
 
         const participantId = participantIdInput.value.trim();
-        const condition = conditionSelect.value;
+        // MODIFIED: Changed from 'condition'
+        const condition_order = conditionOrderSelect.value;
 
-        if (!participantId || !condition) {
-            errorMessage.textContent = "Error: Please provide a valid Participant ID and select a Condition.";
+        // MODIFIED: Updated validation check
+        if (!participantId || !condition_order) {
+            errorMessage.textContent = "Error: Please provide a valid Participant ID and select a Condition Order.";
             errorMessage.style.display = 'block';
             return;
         }
@@ -116,9 +123,10 @@
         fetch('http://127.0.0.1:5000/start_experiment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            // MODIFIED: Sending 'condition_order'
             body: JSON.stringify({
                 participant_id: participantId,
-                condition: condition
+                condition_order: condition_order,
             })
         })
         .then(response => response.json())

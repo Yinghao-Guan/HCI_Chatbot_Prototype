@@ -22,10 +22,6 @@ SUMMARY_INTERVAL = 5
 # 实验数据存储路径
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
-# backend/config.py
-
-# ... (顶部配置保持不变) ...
-
 # 实验版本配置 (用于手动指定)
 VERSION_MAP = {
     "XAI": "/html/XAI_Version.html",
@@ -46,12 +42,29 @@ INSTRUCTION_VERSION_MAP = {
 # 索引 4: POST_QUESTIONNAIRE
 # 索引 5: OPEN_ENDED_QS
 # 索引 6: DEBRIEF (这是终点，不需数据保存)
+
+# --- (OLD) Between-Subjects Steps ---
+# EXPERIMENT_STEPS = [
+#     "DEMOGRAPHICS",
+#     "BASELINE_MOOD",
+#     "INSTRUCTIONS",
+#     "DIALOGUE",
+#     "POST_QUESTIONNAIRE",
+#     "OPEN_ENDED_QS",
+#     "DEBRIEF"
+# ]
+
+# --- (NEW) Within-Subjects Steps ---
 EXPERIMENT_STEPS = [
-    "DEMOGRAPHICS",
-    "BASELINE_MOOD",
-    "INSTRUCTIONS",
-    "DIALOGUE",
-    "POST_QUESTIONNAIRE",
-    "OPEN_ENDED_QS",
-    "DEBRIEF"
+    "DEMOGRAPHICS",         # 0
+    "BASELINE_MOOD",        # 1
+    "INSTRUCTIONS_1",       # 2
+    "DIALOGUE_1",           # 3
+    "POST_QUESTIONNAIRE_1", # 4
+    "WASHOUT",              # 5
+    "INSTRUCTIONS_2",       # 6
+    "DIALOGUE_2",           # 7
+    "POST_QUESTIONNAIRE_2", # 8
+    "OPEN_ENDED_QS",        # 9
+    "DEBRIEF"               # 10
 ]
